@@ -19,15 +19,14 @@
   right: 12px;
   z-index: 2147483647;
   display: none;
-  gap: 6px;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 10px;
-  font-family: "Segoe UI", system-ui, sans-serif;
-  font-size: 13px;
+  flex-direction: column;
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-family: "Lilex", sans-serif;
+  font-size: 14px;
   user-select: none;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
-  transition: background 0.25s, color 0.25s;
+  transition: background 0.25s, color 0.25s, border-color 0.25s;
+  min-width: 200px;
 }
 
 #fib-toolbar.visible {
@@ -35,45 +34,122 @@
 }
 
 #fib-toolbar.fib-light {
-  background: #ffffffee;
+  background: #ffffff;
   color: #1a1a2e;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
 #fib-toolbar.fib-dark {
-  background: #1a1a2eee;
+  background: #1a1a2e;
   color: #e0e0e0;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* Toolbar rows */
+.fib-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fib-toolbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fib-toolbar-hint {
+  font-family: "Lilex", sans-serif;
+  font-size: 10px;
+  font-style: italic;
+  color: #999;
+  margin-top: 6px;
+  margin-bottom: -6px;
+  text-align: center;
+  padding-left: 10px;
+}
+
+
+/* Toolbar icon buttons */
 #fib-toolbar button {
   border: none;
-  border-radius: 6px;
-  padding: 5px 12px;
+  background: transparent;
+  padding: 4px 10px;
   cursor: pointer;
-  font-size: 13px;
-  font-family: inherit;
-  transition: background 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background 0.15s;
 }
 
-#fib-toolbar.fib-light button {
-  background: #eef0f5;
-  color: #1a1a2e;
-}
 #fib-toolbar.fib-light button:hover {
-  background: #dde1ea;
+  background: rgba(0, 0, 0, 0.06);
 }
 
-#fib-toolbar.fib-dark button {
-  background: #2a2a4a;
+#fib-toolbar.fib-dark button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+
+.fib-toolbar-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* Drag handle (6 dots) */
+#fib-drag-handle {
+  display: grid;
+  grid-template-columns: repeat(2, 3px);
+  grid-template-rows: repeat(3, 3px);
+  gap: 3px;
+  cursor: grab;
+  padding: 2px;
+}
+
+#fib-drag-handle:active {
+  cursor: grabbing;
+}
+
+#fib-drag-handle span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+}
+
+#fib-toolbar.fib-light #fib-drag-handle span {
+  background: #1a1a2e;
+}
+
+#fib-toolbar.fib-dark #fib-drag-handle span {
+  background: #e0e0e0;
+}
+
+/* Toolbar group (for right-aligned items) */
+.fib-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Toolbar text labels */
+#fib-btn-theme-label,
+#fib-btn-clear-label {
+  font-family: "Lilex", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  cursor: default;
+  color: inherit;
+}
+
+#fib-toolbar.fib-dark #fib-btn-theme-label,
+#fib-toolbar.fib-dark #fib-btn-clear-label {
   color: #e0e0e0;
 }
-#fib-toolbar.fib-dark button:hover {
-  background: #3a3a5a;
-}
 
-#fib-toolbar .fib-status {
-  margin-right: 4px;
-  font-weight: 600;
-}
 
 /* ── Drawing preview ── */
 #fib-draw-preview {
@@ -126,7 +202,7 @@
   transition: opacity 0.15s;
   pointer-events: auto;
   padding: 0;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  font-family: "Lilex", sans-serif;
   box-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
@@ -207,14 +283,14 @@
 /* ── Edit menu (bottom-right, outside spiral) ── */
 .fib-edit-menu {
   position: absolute;
-  bottom: -40px;
+  bottom: -46px;
   right: -4px;
   display: none;
-  gap: 4px;
+  gap: 8px;
   align-items: center;
-  padding: 4px 8px;
+  padding: 6px 10px;
   border-radius: 8px;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  font-family: "Lilex", sans-serif;
   font-size: 12px;
   white-space: nowrap;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
@@ -229,7 +305,7 @@
 .fib-edit-menu button {
   border: none;
   border-radius: 5px;
-  padding: 4px 10px;
+  padding: 6px 12px;
   cursor: pointer;
   font-size: 12px;
   font-family: inherit;
@@ -241,11 +317,11 @@
   color: #1a1a2e;
 }
 .fib-light .fib-edit-menu button {
-  background: #eef0f5;
+  background: transparent;
   color: #1a1a2e;
 }
 .fib-light .fib-edit-menu button:hover {
-  background: #dde1ea;
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .fib-dark .fib-edit-menu {
@@ -253,48 +329,33 @@
   color: #e0e0e0;
 }
 .fib-dark .fib-edit-menu button {
-  background: #2a2a4a;
+  background: transparent;
   color: #e0e0e0;
 }
 .fib-dark .fib-edit-menu button:hover {
-  background: #3a3a5a;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* Color picker in edit menu */
-.fib-color-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 5px;
-  font-size: 12px;
-}
-
-.fib-light .fib-color-label {
-  background: #eef0f5;
-  color: #1a1a2e;
-}
-.fib-light .fib-color-label:hover {
-  background: #dde1ea;
-}
-
-.fib-dark .fib-color-label {
-  background: #2a2a4a;
-  color: #e0e0e0;
-}
-.fib-dark .fib-color-label:hover {
-  background: #3a3a5a;
-}
-
 .fib-color-input {
   width: 20px;
   height: 20px;
   padding: 0;
-  border: 1px solid rgba(128, 128, 128, 0.3);
+  border: none;
   border-radius: 4px;
   cursor: pointer;
   background: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.fib-color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.fib-color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
 }
 
 /* ── Crosshair cursor when active ── */

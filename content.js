@@ -29,6 +29,18 @@
   let rotateStartAngle = 0;
   let rotateCurrentAngle = 0;
 
+  /* ── Inject @font-face with resolved extension URL ── */
+  const fontStyle = document.createElement("style");
+  fontStyle.textContent = `
+    @font-face {
+      font-family: "Lilex";
+      src: url("${chrome.runtime.getURL("fonts/Lilex-Regular.ttf")}") format("truetype");
+      font-weight: normal;
+      font-style: normal;
+    }
+  `;
+  document.documentElement.appendChild(fontStyle);
+
   /* ── Spiral image URLs ── */
   const svgSrc = chrome.runtime.getURL("icons/fibseq.svg");
   const previewSrc = chrome.runtime.getURL("icons/fibseq.svg");
@@ -50,11 +62,16 @@
   toolbar.id = "fib-toolbar";
   toolbar.className = "fib-light";
   toolbar.innerHTML = `
-    <span class="fib-status">Fibonacci</span>
-    <button id="fib-btn-mirror" title="Mirror next spiral">Mirror</button>
-    <button id="fib-btn-theme" title="Toggle dark / light mode">Dark</button>
-    <button id="fib-btn-clear" title="Remove all spirals">Clear All</button>
-    <button id="fib-btn-close" title="Deactivate overlay">✕</button>
+    <div class="fib-toolbar-row">
+      <div id="fib-drag-handle" title="Drag to move">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="fib-toolbar-buttons">
+        <button id="fib-btn-theme" title="Toggle dark / light mode"><span id="fib-btn-theme-label">Dark</span></button>
+        <button id="fib-btn-clear" title="Erase all"><span id="fib-btn-clear-label">Erase all</span></button>
+      </div>
+    </div>
+    <div class="fib-toolbar-hint">Alt + Q to toggle</div>
   `;
   document.documentElement.appendChild(toolbar);
 
@@ -67,16 +84,12 @@
   preview.appendChild(previewImg);
   document.documentElement.appendChild(preview);
 
-  /* ── Mirror state ── */
+  /* ── Mirror state (toggled per-spiral via edit menu) ── */
   let mirrorOn = false;
-  const btnMirror = toolbar.querySelector("#fib-btn-mirror");
-  btnMirror.addEventListener("click", () => {
-    mirrorOn = !mirrorOn;
-    btnMirror.textContent = mirrorOn ? "Mirror ✓" : "Mirror";
-  });
 
   /* ── Theme toggle ── */
   const btnTheme = toolbar.querySelector("#fib-btn-theme");
+  const themeLabel = toolbar.querySelector("#fib-btn-theme-label");
   btnTheme.addEventListener("click", () => {
     darkMode = !darkMode;
     applyTheme();
@@ -84,7 +97,7 @@
 
   function applyTheme() {
     toolbar.className = darkMode ? "fib-dark visible" : "fib-light visible";
-    btnTheme.textContent = darkMode ? "Light" : "Dark";
+    themeLabel.textContent = darkMode ? "Light" : "Dark";
     document.querySelectorAll(".fib-spiral-container").forEach((el) => {
       el.classList.toggle("fib-dark", darkMode);
       el.classList.toggle("fib-light", !darkMode);
@@ -97,9 +110,32 @@
     document.querySelectorAll(".fib-spiral-container").forEach((el) => el.remove());
   });
 
-  /* ── Close ── */
-  toolbar.querySelector("#fib-btn-close").addEventListener("click", () => {
-    deactivate();
+
+  /* ── Toolbar drag ── */
+  const dragHandle = toolbar.querySelector("#fib-drag-handle");
+  let toolbarDragging = false;
+  let toolbarOffsetX = 0;
+  let toolbarOffsetY = 0;
+
+  dragHandle.addEventListener("mousedown", (e) => {
+    toolbarDragging = true;
+    const rect = toolbar.getBoundingClientRect();
+    toolbarOffsetX = e.clientX - rect.left;
+    toolbarOffsetY = e.clientY - rect.top;
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!toolbarDragging) return;
+    toolbar.style.left = (e.clientX - toolbarOffsetX) + "px";
+    toolbar.style.top = (e.clientY - toolbarOffsetY) + "px";
+    toolbar.style.right = "auto";
+    e.stopPropagation();
+    e.preventDefault();
+  });
+
+  document.addEventListener("mouseup", () => {
+    toolbarDragging = false;
   });
 
   /* ── Activate / Deactivate ── */
@@ -299,7 +335,8 @@
     const { x, y, w, h } = getProportionalRect(e.pageX, e.pageY);
     if (w < 30 || h < 20) return;
 
-    createSpiral(x, y, w, h, mirrorOn);
+    const newSpiral = createSpiral(x, y, w, h, mirrorOn);
+    setEditing(newSpiral);
     e.preventDefault();
   });
 
@@ -366,7 +403,7 @@
 
     /* Single rotate button — 90° CW icon only */
     const btnRotate = document.createElement("button");
-    btnRotate.textContent = "↻";
+    btnRotate.textContent = "Rotate 90°";
     btnRotate.title = "Rotate 90° clockwise";
     btnRotate.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -390,12 +427,11 @@
     const colorLabel = document.createElement("label");
     colorLabel.className = "fib-color-label";
     colorLabel.title = "Change spiral color";
-    colorLabel.textContent = "Color";
-
     const colorInput = document.createElement("input");
     colorInput.type = "color";
     colorInput.value = currentColor;
     colorInput.className = "fib-color-input";
+    colorInput.title = "Change spiral color";
     colorInput.addEventListener("input", (e) => {
       e.stopPropagation();
       const newColor = e.target.value;
@@ -404,14 +440,13 @@
     });
     colorInput.addEventListener("click", (e) => e.stopPropagation());
 
-    colorLabel.appendChild(colorInput);
-
     menu.appendChild(btnRotate);
     menu.appendChild(btnMirrorSpiral);
-    menu.appendChild(colorLabel);
+    menu.appendChild(colorInput);
     container.appendChild(menu);
 
     document.documentElement.appendChild(container);
+    return container;
   }
 
   /* ── Update container rotation transform ── */
