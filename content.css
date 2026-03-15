@@ -283,8 +283,6 @@
 /* ── Edit menu (bottom-right, outside spiral) ── */
 .fib-edit-menu {
   position: absolute;
-  bottom: -46px;
-  right: -4px;
   display: none;
   gap: 8px;
   align-items: center;
@@ -298,7 +296,7 @@
   z-index: 2147483645;
 }
 
-.fib-spiral-container.fib-editing .fib-edit-menu {
+.fib-edit-menu.fib-menu-visible {
   display: flex;
 }
 
@@ -312,28 +310,16 @@
   transition: background 0.15s;
 }
 
-.fib-light .fib-edit-menu {
-  background: #ffffffee;
+.fib-edit-menu {
+  background: #ffffff;
   color: #1a1a2e;
 }
-.fib-light .fib-edit-menu button {
+.fib-edit-menu button {
   background: transparent;
   color: #1a1a2e;
 }
-.fib-light .fib-edit-menu button:hover {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-.fib-dark .fib-edit-menu {
-  background: #1a1a2eee;
-  color: #e0e0e0;
-}
-.fib-dark .fib-edit-menu button {
-  background: transparent;
-  color: #e0e0e0;
-}
-.fib-dark .fib-edit-menu button:hover {
-  background: rgba(255, 255, 255, 0.08);
+.fib-edit-menu button:hover {
+  background: rgba(0, 0, 0, 0.08);
 }
 
 /* Color picker in edit menu */
@@ -356,6 +342,7 @@
 .fib-color-input::-webkit-color-swatch {
   border: none;
   border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 /* ── Crosshair cursor when active ── */

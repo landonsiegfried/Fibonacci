@@ -107,7 +107,10 @@
   /* ── Clear all ── */
   toolbar.querySelector("#fib-btn-clear").addEventListener("click", () => {
     clearEditing();
-    document.querySelectorAll(".fib-spiral-container").forEach((el) => el.remove());
+    document.querySelectorAll(".fib-spiral-container").forEach((el) => {
+      if (el._editMenu) el._editMenu.remove();
+      el.remove();
+    });
   });
 
 
@@ -161,6 +164,7 @@
   function clearEditing() {
     if (editingSpiral) {
       editingSpiral.classList.remove("fib-editing");
+      if (editingSpiral._editMenu) editingSpiral._editMenu.classList.remove("fib-menu-visible");
       editingSpiral = null;
     }
   }
@@ -170,6 +174,10 @@
     clearEditing();
     editingSpiral = container;
     container.classList.add("fib-editing");
+    if (container._editMenu) {
+      container._editMenu.classList.add("fib-menu-visible");
+      positionEditMenu(container);
+    }
   }
 
   /* ── Listen for toggle from background ── */
@@ -276,6 +284,7 @@
     if (dragging && dragTarget) {
       dragTarget.style.left = (e.pageX - dragOffsetX) + "px";
       dragTarget.style.top = (e.pageY - dragOffsetY) + "px";
+      if (editingSpiral === dragTarget) positionEditMenu(dragTarget);
       e.preventDefault();
       return;
     }
@@ -293,6 +302,7 @@
       }
       resizeTarget.style.width = newW + "px";
       resizeTarget.style.height = newH + "px";
+      if (editingSpiral === resizeTarget) positionEditMenu(resizeTarget);
       e.preventDefault();
       return;
     }
@@ -383,6 +393,7 @@
     btnDelete.addEventListener("click", (e) => {
       e.stopPropagation();
       if (editingSpiral === container) clearEditing();
+      if (container._editMenu) container._editMenu.remove();
       container.remove();
     });
     container.appendChild(btnDelete);
@@ -443,15 +454,40 @@
     menu.appendChild(btnRotate);
     menu.appendChild(btnMirrorSpiral);
     menu.appendChild(colorInput);
-    container.appendChild(menu);
+
+    // Prevent clicks on the menu from closing edit mode
+    menu.addEventListener("mousedown", (e) => e.stopPropagation());
+
+    // Menu lives outside the container so it doesn't rotate
+    document.documentElement.appendChild(menu);
+    container._editMenu = menu;
 
     document.documentElement.appendChild(container);
     return container;
+  }
+
+  /* ── Position the edit menu at the visual bottom-right of a spiral ── */
+  function positionEditMenu(container) {
+    const menu = container._editMenu;
+    if (!menu) return;
+    const rect = container.getBoundingClientRect();
+    menu.style.left = (rect.right + window.scrollX - menu.offsetWidth) + "px";
+    menu.style.top = (rect.bottom + window.scrollY + 15) + "px";
   }
 
   /* ── Update container rotation transform ── */
   function updateContainerTransform(container) {
     const rot = parseFloat(container.dataset.rotation || "0");
     container.style.transform = rot ? `rotate(${rot}deg)` : "";
+    // Counter-rotate UI elements so they stay upright
+    const counterRot = rot ? `rotate(${-rot}deg)` : "";
+    const del = container.querySelector(".fib-delete-btn");
+    const resize = container.querySelector(".fib-resize-handle");
+    const rotHandle = container.querySelector(".fib-rotate-handle");
+    if (del) del.style.transform = counterRot;
+    if (resize) resize.style.transform = counterRot;
+    if (rotHandle) rotHandle.style.transform = `translateX(-50%) ${counterRot}`;
+    // Reposition the external edit menu
+    if (editingSpiral === container) positionEditMenu(container);
   }
 })();
