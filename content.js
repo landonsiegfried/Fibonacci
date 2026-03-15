@@ -19,6 +19,10 @@
   let resizeStartX = 0;
   let resizeStartY = 0;
   let editingSpiral = null;
+  let dragging = false;
+  let dragTarget = null;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
 
   /* ── Spiral image URL ── */
   const spiralSrc = chrome.runtime.getURL("icons/Fibonacci-spiral.png");
@@ -162,10 +166,16 @@
       return;
     }
 
-    // Check if clicking on a spiral container (enter edit mode)
+    // Check if clicking on a spiral container (enter edit mode + start drag)
     const spiralEl = e.target.closest(".fib-spiral-container");
     if (spiralEl) {
+      // Don't drag if clicking edit menu buttons
+      if (e.target.closest(".fib-edit-menu") || e.target.closest(".fib-delete-btn")) return;
       setEditing(spiralEl);
+      dragging = true;
+      dragTarget = spiralEl;
+      dragOffsetX = e.pageX - parseFloat(spiralEl.style.left);
+      dragOffsetY = e.pageY - parseFloat(spiralEl.style.top);
       e.preventDefault();
       return;
     }
@@ -184,6 +194,13 @@
   });
 
   document.addEventListener("mousemove", (e) => {
+    if (dragging && dragTarget) {
+      dragTarget.style.left = (e.pageX - dragOffsetX) + "px";
+      dragTarget.style.top = (e.pageY - dragOffsetY) + "px";
+      e.preventDefault();
+      return;
+    }
+
     if (resizing && resizeTarget) {
       const dx = e.pageX - resizeStartX;
       const dy = e.pageY - resizeStartY;
@@ -212,6 +229,13 @@
   });
 
   document.addEventListener("mouseup", (e) => {
+    if (dragging) {
+      dragging = false;
+      dragTarget = null;
+      e.preventDefault();
+      return;
+    }
+
     if (resizing) {
       resizing = false;
       resizeTarget = null;

@@ -228,7 +228,10 @@ body.fib-drawing-mode {
   cursor: crosshair !important;
 }
 body.fib-drawing-mode .fib-spiral-container {
-  cursor: pointer !important;
+  cursor: grab !important;
+}
+body.fib-drawing-mode .fib-spiral-container:active {
+  cursor: grabbing !important;
 }
 body.fib-drawing-mode .fib-resize-handle {
   cursor: nwse-resize !important;
