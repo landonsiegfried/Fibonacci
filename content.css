@@ -154,10 +154,10 @@
 }
 
 .fib-light .fib-resize-handle {
-  border: 1px solid #555;
+  border: 1px solid #4a90d9;
 }
 .fib-dark .fib-resize-handle {
-  border: 1px solid #aaa;
+  border: 1px solid #6ab0f3;
 }
 
 .fib-spiral-container:hover .fib-resize-handle {
@@ -177,11 +177,11 @@
 /* ── Rotate handle (top-center circle) ── */
 .fib-rotate-handle {
   position: absolute;
-  top: -32px;
+  top: -28px;
   left: 50%;
   transform: translateX(-50%);
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: transparent;
   cursor: grab;
@@ -194,10 +194,10 @@
 }
 
 .fib-light .fib-rotate-handle {
-  border: 1px solid #555;
+  border: 1px solid #4a90d9;
 }
 .fib-dark .fib-rotate-handle {
-  border: 1px solid #aaa;
+  border: 1px solid #6ab0f3;
 }
 
 .fib-spiral-container.fib-editing .fib-rotate-handle {
