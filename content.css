@@ -1,0 +1,131 @@
+/* ── Toolbar ── */
+#fib-toolbar {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 2147483647;
+  display: none;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 13px;
+  user-select: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  transition: background 0.25s, color 0.25s;
+}
+
+#fib-toolbar.visible {
+  display: flex;
+}
+
+/* Light mode (default) */
+#fib-toolbar.fib-light {
+  background: #ffffffee;
+  color: #1a1a2e;
+}
+
+/* Dark mode */
+#fib-toolbar.fib-dark {
+  background: #1a1a2eee;
+  color: #e0e0e0;
+}
+
+#fib-toolbar button {
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: background 0.2s, color 0.2s;
+}
+
+#fib-toolbar.fib-light button {
+  background: #eef0f5;
+  color: #1a1a2e;
+}
+#fib-toolbar.fib-light button:hover {
+  background: #dde1ea;
+}
+
+#fib-toolbar.fib-dark button {
+  background: #2a2a4a;
+  color: #e0e0e0;
+}
+#fib-toolbar.fib-dark button:hover {
+  background: #3a3a5a;
+}
+
+#fib-toolbar .fib-status {
+  margin-right: 4px;
+  font-weight: 600;
+}
+
+/* ── Drawing preview ── */
+#fib-draw-preview {
+  position: absolute;
+  border: 2px dashed #c9a84c;
+  pointer-events: none;
+  z-index: 2147483646;
+  display: none;
+  box-sizing: border-box;
+}
+
+/* ── Spiral container ── */
+.fib-spiral-container {
+  position: absolute;
+  z-index: 2147483640;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.fib-spiral-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Spiral control buttons ── */
+.fib-spiral-controls {
+  position: absolute;
+  top: -28px;
+  right: 0;
+  display: flex;
+  gap: 4px;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.fib-spiral-container:hover .fib-spiral-controls {
+  opacity: 1;
+}
+
+.fib-spiral-controls button {
+  border: none;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.fib-light .fib-spiral-controls button {
+  background: #eef0f5;
+  color: #1a1a2e;
+}
+
+.fib-dark .fib-spiral-controls button {
+  background: #2a2a4a;
+  color: #e0e0e0;
+}
+
+/* ── Crosshair cursor when active ── */
+body.fib-drawing-mode {
+  cursor: crosshair !important;
+}
+body.fib-drawing-mode * {
+  cursor: crosshair !important;
+}
