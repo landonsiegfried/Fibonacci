@@ -141,22 +141,23 @@
 /* ── Resize handle (bottom-right corner) ── */
 .fib-resize-handle {
   position: absolute;
-  bottom: -6px;
-  right: -6px;
-  width: 14px;
-  height: 14px;
+  bottom: -20px;
+  right: -20px;
+  width: 10px;
+  height: 10px;
   cursor: nwse-resize;
-  border-radius: 2px;
+  border-radius: 0;
+  background: transparent;
   opacity: 0;
   transition: opacity 0.15s;
   pointer-events: auto;
 }
 
 .fib-light .fib-resize-handle {
-  background: rgba(80, 80, 80, 0.5);
+  border: 1px solid #555;
 }
 .fib-dark .fib-resize-handle {
-  background: rgba(200, 200, 200, 0.5);
+  border: 1px solid #aaa;
 }
 
 .fib-spiral-container:hover .fib-resize-handle {
