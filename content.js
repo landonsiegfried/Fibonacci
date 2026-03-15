@@ -10,11 +10,23 @@
   let active = false;
   let darkMode = false;
   let drawing = false;
+  let resizing = false;
   let startX = 0;
   let startY = 0;
+  let resizeTarget = null;
+  let resizeStartW = 0;
+  let resizeStartH = 0;
+  let resizeStartX = 0;
+  let resizeStartY = 0;
+  let editingSpiral = null;
 
   /* ── Spiral image URL ── */
   const spiralSrc = chrome.runtime.getURL("icons/Fibonacci-spiral.png");
+
+  /* ── Page tint overlay ── */
+  const tint = document.createElement("div");
+  tint.id = "fib-tint";
+  document.documentElement.appendChild(tint);
 
   /* ── Build toolbar ── */
   const toolbar = document.createElement("div");
@@ -64,6 +76,7 @@
 
   /* ── Clear all ── */
   toolbar.querySelector("#fib-btn-clear").addEventListener("click", () => {
+    clearEditing();
     document.querySelectorAll(".fib-spiral-container").forEach((el) => el.remove());
   });
 
@@ -76,15 +89,34 @@
   function activate() {
     active = true;
     toolbar.classList.add("visible");
+    tint.classList.add("visible");
     document.body.classList.add("fib-drawing-mode");
   }
 
   function deactivate() {
     active = false;
     drawing = false;
+    resizing = false;
+    clearEditing();
     preview.style.display = "none";
     toolbar.classList.remove("visible");
+    tint.classList.remove("visible");
     document.body.classList.remove("fib-drawing-mode");
+  }
+
+  /* ── Edit mode ── */
+  function clearEditing() {
+    if (editingSpiral) {
+      editingSpiral.classList.remove("fib-editing");
+      editingSpiral = null;
+    }
+  }
+
+  function setEditing(container) {
+    if (editingSpiral === container) return;
+    clearEditing();
+    editingSpiral = container;
+    container.classList.add("fib-editing");
   }
 
   /* ── Listen for toggle from background ── */
@@ -98,7 +130,6 @@
   function getProportionalRect(ex, ey) {
     const dx = ex - startX;
     const dy = ey - startY;
-    // Use the larger axis to determine size, lock aspect ratio
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
     let w, h;
@@ -109,7 +140,6 @@
       h = absDy;
       w = absDy * ASPECT;
     }
-    // Position: anchor at startX/startY, expand in drag direction
     const x = dx >= 0 ? startX : startX - w;
     const y = dy >= 0 ? startY : startY - h;
     return { x, y, w, h };
@@ -119,8 +149,29 @@
   document.addEventListener("mousedown", (e) => {
     if (!active || e.button !== 0) return;
     if (toolbar.contains(e.target)) return;
-    if (e.target.closest(".fib-spiral-container")) return;
 
+    // Check if clicking a resize handle
+    if (e.target.classList.contains("fib-resize-handle")) {
+      resizing = true;
+      resizeTarget = e.target.closest(".fib-spiral-container");
+      resizeStartW = parseFloat(resizeTarget.style.width);
+      resizeStartH = parseFloat(resizeTarget.style.height);
+      resizeStartX = e.pageX;
+      resizeStartY = e.pageY;
+      e.preventDefault();
+      return;
+    }
+
+    // Check if clicking on a spiral container (enter edit mode)
+    const spiralEl = e.target.closest(".fib-spiral-container");
+    if (spiralEl) {
+      setEditing(spiralEl);
+      e.preventDefault();
+      return;
+    }
+
+    // Clicking on empty space — clear edit mode and start drawing
+    clearEditing();
     drawing = true;
     startX = e.pageX;
     startY = e.pageY;
@@ -133,6 +184,24 @@
   });
 
   document.addEventListener("mousemove", (e) => {
+    if (resizing && resizeTarget) {
+      const dx = e.pageX - resizeStartX;
+      const dy = e.pageY - resizeStartY;
+      // Use larger delta, lock aspect ratio
+      let newW, newH;
+      if (Math.abs(dx) / ASPECT >= Math.abs(dy)) {
+        newW = Math.max(30, resizeStartW + dx);
+        newH = newW / ASPECT;
+      } else {
+        newH = Math.max(20, resizeStartH + dy);
+        newW = newH * ASPECT;
+      }
+      resizeTarget.style.width = newW + "px";
+      resizeTarget.style.height = newH + "px";
+      e.preventDefault();
+      return;
+    }
+
     if (!drawing) return;
     const { x, y, w, h } = getProportionalRect(e.pageX, e.pageY);
     preview.style.left = x + "px";
@@ -143,13 +212,19 @@
   });
 
   document.addEventListener("mouseup", (e) => {
+    if (resizing) {
+      resizing = false;
+      resizeTarget = null;
+      e.preventDefault();
+      return;
+    }
+
     if (!drawing) return;
     drawing = false;
     preview.style.display = "none";
 
     const { x, y, w, h } = getProportionalRect(e.pageX, e.pageY);
-
-    if (w < 30 || h < 20) return; // too small, ignore
+    if (w < 30 || h < 20) return;
 
     createSpiral(x, y, w, h, mirrorOn);
     e.preventDefault();
@@ -172,26 +247,77 @@
     }
     container.appendChild(img);
 
-    /* Per-spiral controls */
-    const controls = document.createElement("div");
-    controls.className = "fib-spiral-controls";
+    /* Delete button (red X, top-right) */
+    const btnDelete = document.createElement("button");
+    btnDelete.className = "fib-delete-btn";
+    btnDelete.textContent = "✕";
+    btnDelete.title = "Delete this spiral";
+    btnDelete.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (editingSpiral === container) clearEditing();
+      container.remove();
+    });
+    container.appendChild(btnDelete);
 
-    const btnFlip = document.createElement("button");
-    btnFlip.textContent = "↔";
-    btnFlip.title = "Mirror this spiral";
-    btnFlip.addEventListener("click", () => {
-      const current = img.style.transform;
-      img.style.transform = current === "scaleX(-1)" ? "" : "scaleX(-1)";
+    /* Resize handle (bottom-right) */
+    const resizeHandle = document.createElement("div");
+    resizeHandle.className = "fib-resize-handle";
+    container.appendChild(resizeHandle);
+
+    /* Edit menu (bottom-right, outside) */
+    const menu = document.createElement("div");
+    menu.className = "fib-edit-menu";
+
+    const btnRotateCW = document.createElement("button");
+    btnRotateCW.textContent = "↻ 90°";
+    btnRotateCW.title = "Rotate 90° clockwise";
+    btnRotateCW.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const current = parseInt(img.dataset.rotation || "0");
+      const next = (current + 90) % 360;
+      img.dataset.rotation = next;
+      updateImgTransform(img);
     });
 
-    const btnRemove = document.createElement("button");
-    btnRemove.textContent = "✕";
-    btnRemove.title = "Remove this spiral";
-    btnRemove.addEventListener("click", () => container.remove());
+    const btnRotateCCW = document.createElement("button");
+    btnRotateCCW.textContent = "↺ 90°";
+    btnRotateCCW.title = "Rotate 90° counter-clockwise";
+    btnRotateCCW.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const current = parseInt(img.dataset.rotation || "0");
+      const next = (current - 90 + 360) % 360;
+      img.dataset.rotation = next;
+      updateImgTransform(img);
+    });
 
-    controls.appendChild(btnFlip);
-    controls.appendChild(btnRemove);
-    container.appendChild(controls);
+    const btnMirrorSpiral = document.createElement("button");
+    btnMirrorSpiral.textContent = "↔ Mirror";
+    btnMirrorSpiral.title = "Mirror this spiral";
+    btnMirrorSpiral.addEventListener("click", (e) => {
+      e.stopPropagation();
+      img.dataset.mirrored = img.dataset.mirrored === "1" ? "0" : "1";
+      updateImgTransform(img);
+    });
+
+    menu.appendChild(btnRotateCCW);
+    menu.appendChild(btnRotateCW);
+    menu.appendChild(btnMirrorSpiral);
+    container.appendChild(menu);
+
+    // Init transform data
+    img.dataset.rotation = "0";
+    img.dataset.mirrored = mirrored ? "1" : "0";
+
     document.documentElement.appendChild(container);
+  }
+
+  /* ── Update image transform from data attributes ── */
+  function updateImgTransform(img) {
+    const rot = parseInt(img.dataset.rotation || "0");
+    const mir = img.dataset.mirrored === "1";
+    let transform = "";
+    if (mir) transform += "scaleX(-1) ";
+    if (rot) transform += `rotate(${rot}deg)`;
+    img.style.transform = transform.trim() || "";
   }
 })();
