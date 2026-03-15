@@ -33,7 +33,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["icons/Fibonacci-spiral.png"],
+      "resources": ["icons/Fibonacci-spiral.png", "icons/fibseq.svg"],
       "matches": ["<all_urls>"]
     }
   ],

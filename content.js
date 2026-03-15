@@ -4,7 +4,7 @@
   window.__fibExtLoaded = true;
 
   /* ── Constants ── */
-  const ASPECT = 1280 / 792; // width / height from the spiral image
+  const ASPECT = 950 / 600; // width / height from the SVG
 
   /* ── State ── */
   let active = false;
@@ -23,9 +23,18 @@
   let dragTarget = null;
   let dragOffsetX = 0;
   let dragOffsetY = 0;
+  let svgTemplate = ""; // raw SVG text, loaded once
 
-  /* ── Spiral image URL ── */
-  const spiralSrc = chrome.runtime.getURL("icons/Fibonacci-spiral.png");
+  /* ── Spiral image URLs ── */
+  const svgSrc = chrome.runtime.getURL("icons/fibseq.svg");
+  const previewSrc = chrome.runtime.getURL("icons/fibseq.svg");
+
+  /* ── Load SVG template ── */
+  fetch(svgSrc)
+    .then((r) => r.text())
+    .then((text) => {
+      svgTemplate = text;
+    });
 
   /* ── Page tint overlay ── */
   const tint = document.createElement("div");
@@ -49,7 +58,7 @@
   const preview = document.createElement("div");
   preview.id = "fib-draw-preview";
   const previewImg = document.createElement("img");
-  previewImg.src = spiralSrc;
+  previewImg.src = previewSrc;
   previewImg.draggable = false;
   preview.appendChild(previewImg);
   document.documentElement.appendChild(preview);
@@ -204,7 +213,6 @@
     if (resizing && resizeTarget) {
       const dx = e.pageX - resizeStartX;
       const dy = e.pageY - resizeStartY;
-      // Use larger delta, lock aspect ratio
       let newW, newH;
       if (Math.abs(dx) / ASPECT >= Math.abs(dy)) {
         newW = Math.max(30, resizeStartW + dx);
@@ -254,6 +262,18 @@
     e.preventDefault();
   });
 
+  /* ── Colorize SVG text ── */
+  function colorizeSvg(color) {
+    // Replace all stroke:#000000 and fill:#000000 with the chosen color
+    return svgTemplate
+      .replace(/stroke:#000000/g, "stroke:" + color)
+      .replace(/fill:#000000/g, "fill:" + color);
+  }
+
+  function svgToDataUrl(svgText) {
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText);
+  }
+
   /* ── Create a spiral ── */
   function createSpiral(x, y, w, h, mirrored) {
     const container = document.createElement("div");
@@ -263,9 +283,14 @@
     container.style.width = w + "px";
     container.style.height = h + "px";
 
+    const currentColor = "#000000";
+    container.dataset.spiralColor = currentColor;
+
     const img = document.createElement("img");
-    img.src = spiralSrc;
+    img.src = svgToDataUrl(colorizeSvg(currentColor));
     img.draggable = false;
+    img.dataset.rotation = "0";
+    img.dataset.mirrored = mirrored ? "1" : "0";
     if (mirrored) {
       img.style.transform = "scaleX(-1)";
     }
@@ -323,14 +348,31 @@
       updateImgTransform(img);
     });
 
+    /* Color picker */
+    const colorLabel = document.createElement("label");
+    colorLabel.className = "fib-color-label";
+    colorLabel.title = "Change spiral color";
+    colorLabel.textContent = "Color";
+
+    const colorInput = document.createElement("input");
+    colorInput.type = "color";
+    colorInput.value = currentColor;
+    colorInput.className = "fib-color-input";
+    colorInput.addEventListener("input", (e) => {
+      e.stopPropagation();
+      const newColor = e.target.value;
+      container.dataset.spiralColor = newColor;
+      img.src = svgToDataUrl(colorizeSvg(newColor));
+    });
+    colorInput.addEventListener("click", (e) => e.stopPropagation());
+
+    colorLabel.appendChild(colorInput);
+
     menu.appendChild(btnRotateCCW);
     menu.appendChild(btnRotateCW);
     menu.appendChild(btnMirrorSpiral);
+    menu.appendChild(colorLabel);
     container.appendChild(menu);
-
-    // Init transform data
-    img.dataset.rotation = "0";
-    img.dataset.mirrored = mirrored ? "1" : "0";
 
     document.documentElement.appendChild(container);
   }
