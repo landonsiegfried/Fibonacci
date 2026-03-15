@@ -3,7 +3,7 @@
   "name": "Fibonacci Overlay",
   "version": "1.0.0",
   "description": "Draw Fibonacci spirals anywhere on any webpage. Click and drag to create, mirror, and toggle dark/light mode.",
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "scripting"],
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",
@@ -29,6 +29,12 @@
       "js": ["content.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/Fibonacci-spiral.png"],
+      "matches": ["<all_urls>"]
     }
   ],
   "icons": {
