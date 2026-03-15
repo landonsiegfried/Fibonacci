@@ -4,7 +4,7 @@
   window.__fibExtLoaded = true;
 
   /* ── Constants ── */
-  const ASPECT = 950 / 600; // width / height from the SVG
+  const ASPECT = 233.60574 / 144.81508; // width / height from the SVG viewBox
 
   /* ── State ── */
   let active = false;
@@ -355,11 +355,7 @@
     resizeHandle.className = "fib-resize-handle";
     container.appendChild(resizeHandle);
 
-    /* Rotate line + handle (top-center) */
-    const rotateLine = document.createElement("div");
-    rotateLine.className = "fib-rotate-line";
-    container.appendChild(rotateLine);
-
+    /* Rotate handle (top-center) */
     const rotateHandleEl = document.createElement("div");
     rotateHandleEl.className = "fib-rotate-handle";
     container.appendChild(rotateHandleEl);
