@@ -24,6 +24,10 @@
   let dragOffsetX = 0;
   let dragOffsetY = 0;
   let svgTemplate = ""; // raw SVG text, loaded once
+  let rotating = false;
+  let rotateTarget = null;
+  let rotateStartAngle = 0;
+  let rotateCurrentAngle = 0;
 
   /* ── Spiral image URLs ── */
   const svgSrc = chrome.runtime.getURL("icons/fibseq.svg");
@@ -163,6 +167,20 @@
     if (!active || e.button !== 0) return;
     if (toolbar.contains(e.target)) return;
 
+    // Check if clicking the rotate handle
+    if (e.target.classList.contains("fib-rotate-handle")) {
+      rotating = true;
+      rotateTarget = e.target.closest(".fib-spiral-container");
+      const rect = rotateTarget.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const mouseAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+      rotateCurrentAngle = parseFloat(rotateTarget.dataset.rotation || "0");
+      rotateStartAngle = mouseAngle - rotateCurrentAngle;
+      e.preventDefault();
+      return;
+    }
+
     // Check if clicking a resize handle
     if (e.target.classList.contains("fib-resize-handle")) {
       resizing = true;
@@ -203,6 +221,22 @@
   });
 
   document.addEventListener("mousemove", (e) => {
+    if (rotating && rotateTarget) {
+      const rect = rotateTarget.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      let angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI) - rotateStartAngle;
+      // Snap to 15° increments when Ctrl is held
+      if (e.ctrlKey) {
+        angle = Math.round(angle / 15) * 15;
+      }
+      rotateCurrentAngle = angle;
+      rotateTarget.dataset.rotation = angle;
+      updateContainerTransform(rotateTarget);
+      e.preventDefault();
+      return;
+    }
+
     if (dragging && dragTarget) {
       dragTarget.style.left = (e.pageX - dragOffsetX) + "px";
       dragTarget.style.top = (e.pageY - dragOffsetY) + "px";
@@ -237,6 +271,13 @@
   });
 
   document.addEventListener("mouseup", (e) => {
+    if (rotating) {
+      rotating = false;
+      rotateTarget = null;
+      e.preventDefault();
+      return;
+    }
+
     if (dragging) {
       dragging = false;
       dragTarget = null;
@@ -285,12 +326,13 @@
 
     const currentColor = "#000000";
     container.dataset.spiralColor = currentColor;
+    container.dataset.mirrored = mirrored ? "1" : "0";
+    container.dataset.rotation = "0";
 
     const img = document.createElement("img");
+    img.className = "fib-spiral-img";
     img.src = svgToDataUrl(colorizeSvg(currentColor));
     img.draggable = false;
-    img.dataset.rotation = "0";
-    img.dataset.mirrored = mirrored ? "1" : "0";
     if (mirrored) {
       img.style.transform = "scaleX(-1)";
     }
@@ -313,39 +355,39 @@
     resizeHandle.className = "fib-resize-handle";
     container.appendChild(resizeHandle);
 
+    /* Rotate line + handle (top-center) */
+    const rotateLine = document.createElement("div");
+    rotateLine.className = "fib-rotate-line";
+    container.appendChild(rotateLine);
+
+    const rotateHandleEl = document.createElement("div");
+    rotateHandleEl.className = "fib-rotate-handle";
+    container.appendChild(rotateHandleEl);
+
     /* Edit menu (bottom-right, outside) */
     const menu = document.createElement("div");
     menu.className = "fib-edit-menu";
 
-    const btnRotateCW = document.createElement("button");
-    btnRotateCW.textContent = "↻ 90°";
-    btnRotateCW.title = "Rotate 90° clockwise";
-    btnRotateCW.addEventListener("click", (e) => {
+    /* Single rotate button — 90° CW icon only */
+    const btnRotate = document.createElement("button");
+    btnRotate.textContent = "↻";
+    btnRotate.title = "Rotate 90° clockwise";
+    btnRotate.addEventListener("click", (e) => {
       e.stopPropagation();
-      const current = parseInt(img.dataset.rotation || "0");
-      const next = (current + 90) % 360;
-      img.dataset.rotation = next;
-      updateImgTransform(img);
+      const current = parseFloat(container.dataset.rotation || "0");
+      container.dataset.rotation = current + 90;
+      updateContainerTransform(container);
     });
 
-    const btnRotateCCW = document.createElement("button");
-    btnRotateCCW.textContent = "↺ 90°";
-    btnRotateCCW.title = "Rotate 90° counter-clockwise";
-    btnRotateCCW.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const current = parseInt(img.dataset.rotation || "0");
-      const next = (current - 90 + 360) % 360;
-      img.dataset.rotation = next;
-      updateImgTransform(img);
-    });
-
+    /* Mirror button — text only, no icon */
     const btnMirrorSpiral = document.createElement("button");
-    btnMirrorSpiral.textContent = "↔ Mirror";
+    btnMirrorSpiral.textContent = "Mirror";
     btnMirrorSpiral.title = "Mirror this spiral";
     btnMirrorSpiral.addEventListener("click", (e) => {
       e.stopPropagation();
-      img.dataset.mirrored = img.dataset.mirrored === "1" ? "0" : "1";
-      updateImgTransform(img);
+      container.dataset.mirrored = container.dataset.mirrored === "1" ? "0" : "1";
+      const mirrd = container.dataset.mirrored === "1";
+      img.style.transform = mirrd ? "scaleX(-1)" : "";
     });
 
     /* Color picker */
@@ -368,8 +410,7 @@
 
     colorLabel.appendChild(colorInput);
 
-    menu.appendChild(btnRotateCCW);
-    menu.appendChild(btnRotateCW);
+    menu.appendChild(btnRotate);
     menu.appendChild(btnMirrorSpiral);
     menu.appendChild(colorLabel);
     container.appendChild(menu);
@@ -377,13 +418,9 @@
     document.documentElement.appendChild(container);
   }
 
-  /* ── Update image transform from data attributes ── */
-  function updateImgTransform(img) {
-    const rot = parseInt(img.dataset.rotation || "0");
-    const mir = img.dataset.mirrored === "1";
-    let transform = "";
-    if (mir) transform += "scaleX(-1) ";
-    if (rot) transform += `rotate(${rot}deg)`;
-    img.style.transform = transform.trim() || "";
+  /* ── Update container rotation transform ── */
+  function updateContainerTransform(container) {
+    const rot = parseFloat(container.dataset.rotation || "0");
+    container.style.transform = rot ? `rotate(${rot}deg)` : "";
   }
 })();

@@ -34,13 +34,11 @@
   display: flex;
 }
 
-/* Light mode (default) */
 #fib-toolbar.fib-light {
   background: #ffffffee;
   color: #1a1a2e;
 }
 
-/* Dark mode */
 #fib-toolbar.fib-dark {
   background: #1a1a2eee;
   color: #e0e0e0;
@@ -101,7 +99,7 @@
   cursor: pointer;
 }
 
-.fib-spiral-container img {
+.fib-spiral-container img.fib-spiral-img {
   display: block;
   width: 100%;
   height: 100%;
@@ -147,21 +145,83 @@
   width: 14px;
   height: 14px;
   cursor: nwse-resize;
-  background: rgba(201, 168, 76, 0.7);
   border-radius: 2px;
   opacity: 0;
   transition: opacity 0.15s;
   pointer-events: auto;
 }
 
+.fib-light .fib-resize-handle {
+  background: rgba(80, 80, 80, 0.5);
+}
+.fib-dark .fib-resize-handle {
+  background: rgba(200, 200, 200, 0.5);
+}
+
 .fib-spiral-container:hover .fib-resize-handle {
   opacity: 1;
 }
 
-/* ── Edit mode ring ── */
+/* ── Edit mode outline ── */
 .fib-spiral-container.fib-editing {
-  outline: 2px solid #c9a84c;
+  outline: 2px solid #555;
   outline-offset: 2px;
+}
+
+.fib-dark.fib-spiral-container.fib-editing {
+  outline-color: #aaa;
+}
+
+/* ── Rotate handle (top-center circle) ── */
+.fib-rotate-handle {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  cursor: grab;
+  display: none;
+  pointer-events: auto;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+
+.fib-rotate-handle:active {
+  cursor: grabbing;
+}
+
+.fib-light .fib-rotate-handle {
+  background: #555;
+  border: 2px solid #777;
+}
+.fib-dark .fib-rotate-handle {
+  background: #aaa;
+  border: 2px solid #ccc;
+}
+
+/* Line connecting rotate handle to outline */
+.fib-rotate-line {
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 18px;
+  display: none;
+  pointer-events: none;
+}
+
+.fib-light .fib-rotate-line {
+  background: #555;
+}
+.fib-dark .fib-rotate-line {
+  background: #aaa;
+}
+
+.fib-spiral-container.fib-editing .fib-rotate-handle,
+.fib-spiral-container.fib-editing .fib-rotate-line {
+  display: block;
 }
 
 /* ── Edit menu (bottom-right, outside spiral) ── */
@@ -196,7 +256,6 @@
   transition: background 0.15s;
 }
 
-/* Light theme edit menu */
 .fib-light .fib-edit-menu {
   background: #ffffffee;
   color: #1a1a2e;
@@ -209,7 +268,6 @@
   background: #dde1ea;
 }
 
-/* Dark theme edit menu */
 .fib-dark .fib-edit-menu {
   background: #1a1a2eee;
   color: #e0e0e0;
@@ -271,4 +329,7 @@ body.fib-drawing-mode .fib-spiral-container:active {
 }
 body.fib-drawing-mode .fib-resize-handle {
   cursor: nwse-resize !important;
+}
+body.fib-drawing-mode .fib-rotate-handle {
+  cursor: grab !important;
 }
