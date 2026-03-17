@@ -372,7 +372,7 @@
     container.style.width = w + "px";
     container.style.height = h + "px";
 
-    const currentColor = "#000000";
+    const currentColor = darkMode ? "#ffffff" : "#000000";
     container.dataset.spiralColor = currentColor;
     container.dataset.mirrored = mirrored ? "1" : "0";
     container.dataset.rotation = "0";
