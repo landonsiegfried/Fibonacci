@@ -1,5 +1,5 @@
+// try to toggle, if content script isnt injected yet then inject it first
 chrome.action.onClicked.addListener(async (tab) => {
-  // Inject content script if it hasn't been injected yet (e.g. tab was open before extension loaded)
   try {
     await chrome.tabs.sendMessage(tab.id, { action: "toggle" });
   } catch {

@@ -1,12 +1,12 @@
 (() => {
-  /* ── Prevent double-injection ── */
+  // dont load twice
   if (window.__fibExtLoaded) return;
   window.__fibExtLoaded = true;
 
-  /* ── Constants ── */
-  const ASPECT = 233.60574 / 144.81508; // width / height from the SVG viewBox
+  // aspect ratio from the svg viewbox
+  const ASPECT = 233.60574 / 144.81508;
 
-  /* ── State ── */
+  // state stuff
   let active = false;
   let darkMode = false;
   let drawing = false;
@@ -23,13 +23,13 @@
   let dragTarget = null;
   let dragOffsetX = 0;
   let dragOffsetY = 0;
-  let svgTemplate = ""; // raw SVG text, loaded once
+  let svgTemplate = "";
   let rotating = false;
   let rotateTarget = null;
   let rotateStartAngle = 0;
   let rotateCurrentAngle = 0;
 
-  /* ── Inject @font-face with resolved extension URL ── */
+  // inject font face so it works on any page
   const fontStyle = document.createElement("style");
   fontStyle.textContent = `
     @font-face {
@@ -41,23 +41,23 @@
   `;
   document.documentElement.appendChild(fontStyle);
 
-  /* ── Spiral image URLs ── */
+  // svg source url
   const svgSrc = chrome.runtime.getURL("icons/fibseq.svg");
   const previewSrc = chrome.runtime.getURL("icons/fibseq.svg");
 
-  /* ── Load SVG template ── */
+  // grab the svg text so we can recolor it later
   fetch(svgSrc)
     .then((r) => r.text())
     .then((text) => {
       svgTemplate = text;
     });
 
-  /* ── Page tint overlay ── */
+  // slight tint so user knows the extension is active
   const tint = document.createElement("div");
   tint.id = "fib-tint";
   document.documentElement.appendChild(tint);
 
-  /* ── Build toolbar ── */
+  // main toolbar card
   const toolbar = document.createElement("div");
   toolbar.id = "fib-toolbar";
   toolbar.className = "fib-light";
@@ -75,7 +75,7 @@
   `;
   document.documentElement.appendChild(toolbar);
 
-  /* ── Draw preview with spiral image ── */
+  // preview element that shows while dragging out a new spiral
   const preview = document.createElement("div");
   preview.id = "fib-draw-preview";
   const previewImg = document.createElement("img");
@@ -84,10 +84,10 @@
   preview.appendChild(previewImg);
   document.documentElement.appendChild(preview);
 
-  /* ── Mirror state (toggled per-spiral via edit menu) ── */
+  // per-spiral mirror state (not used globally anymore but kept for legacy)
   let mirrorOn = false;
 
-  /* ── Theme toggle ── */
+  // dark/light toggle
   const btnTheme = toolbar.querySelector("#fib-btn-theme");
   const themeLabel = toolbar.querySelector("#fib-btn-theme-label");
   btnTheme.addEventListener("click", () => {
@@ -104,7 +104,7 @@
     });
   }
 
-  /* ── Clear all ── */
+  // erase all spirals
   toolbar.querySelector("#fib-btn-clear").addEventListener("click", () => {
     clearEditing();
     document.querySelectorAll(".fib-spiral-container").forEach((el) => {
@@ -113,8 +113,7 @@
     });
   });
 
-
-  /* ── Toolbar drag ── */
+  // toolbar dragging - lets users move the card around
   const dragHandle = toolbar.querySelector("#fib-drag-handle");
   let toolbarDragging = false;
   let toolbarOffsetX = 0;
@@ -141,7 +140,7 @@
     toolbarDragging = false;
   });
 
-  /* ── Activate / Deactivate ── */
+  // show/hide extension
   function activate() {
     active = true;
     toolbar.classList.add("visible");
@@ -160,7 +159,7 @@
     document.body.classList.remove("fib-drawing-mode");
   }
 
-  /* ── Edit mode ── */
+  // editing a spiral - shows outline, handles, mini menu
   function clearEditing() {
     if (editingSpiral) {
       editingSpiral.classList.remove("fib-editing");
@@ -180,14 +179,15 @@
     }
   }
 
-  /* ── Listen for toggle from background ── */
+  // listen for toggle messge from background script
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.action === "toggle") {
       active ? deactivate() : activate();
     }
   });
 
-  /* ── Compute proportional size from drag distance ── */
+  // figure out the proportional rect from drag distance
+  // keeps the golden ratio locked no matter wich direction you drag
   function getProportionalRect(ex, ey) {
     const dx = ex - startX;
     const dy = ey - startY;
@@ -206,12 +206,12 @@
     return { x, y, w, h };
   }
 
-  /* ── Drawing handlers ── */
+  // main mousedown handler - figures out what the user is tryng to do
   document.addEventListener("mousedown", (e) => {
     if (!active || e.button !== 0) return;
     if (toolbar.contains(e.target)) return;
 
-    // Check if clicking the rotate handle
+    // rotate handle
     if (e.target.classList.contains("fib-rotate-handle")) {
       rotating = true;
       rotateTarget = e.target.closest(".fib-spiral-container");
@@ -225,7 +225,7 @@
       return;
     }
 
-    // Check if clicking a resize handle
+    // resize handle
     if (e.target.classList.contains("fib-resize-handle")) {
       resizing = true;
       resizeTarget = e.target.closest(".fib-spiral-container");
@@ -237,10 +237,9 @@
       return;
     }
 
-    // Check if clicking on a spiral container (enter edit mode + start drag)
+    // clicked on an exisitng spiral - enter edit mode and start dragging
     const spiralEl = e.target.closest(".fib-spiral-container");
     if (spiralEl) {
-      // Don't drag if clicking edit menu buttons
       if (e.target.closest(".fib-edit-menu") || e.target.closest(".fib-delete-btn")) return;
       setEditing(spiralEl);
       dragging = true;
@@ -251,7 +250,7 @@
       return;
     }
 
-    // Clicking on empty space — clear edit mode and start drawing
+    // clicked empty space - deselect and start drawing a new one
     clearEditing();
     drawing = true;
     startX = e.pageX;
@@ -265,12 +264,12 @@
   });
 
   document.addEventListener("mousemove", (e) => {
+    // free rotate, snaps to 15deg when holding ctrl
     if (rotating && rotateTarget) {
       const rect = rotateTarget.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
       const centerY = rect.top + rect.height / 2;
       let angle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI) - rotateStartAngle;
-      // Snap to 15° increments when Ctrl is held
       if (e.ctrlKey) {
         angle = Math.round(angle / 15) * 15;
       }
@@ -281,6 +280,7 @@
       return;
     }
 
+    // dragging a spiral around the page
     if (dragging && dragTarget) {
       dragTarget.style.left = (e.pageX - dragOffsetX) + "px";
       dragTarget.style.top = (e.pageY - dragOffsetY) + "px";
@@ -289,6 +289,7 @@
       return;
     }
 
+    // resizing - keeps ratio locked
     if (resizing && resizeTarget) {
       const dx = e.pageX - resizeStartX;
       const dy = e.pageY - resizeStartY;
@@ -307,6 +308,7 @@
       return;
     }
 
+    // drawing preview
     if (!drawing) return;
     const { x, y, w, h } = getProportionalRect(e.pageX, e.pageY);
     preview.style.left = x + "px";
@@ -343,16 +345,15 @@
     preview.style.display = "none";
 
     const { x, y, w, h } = getProportionalRect(e.pageX, e.pageY);
-    if (w < 30 || h < 20) return;
+    if (w < 30 || h < 20) return; // too small, ignore
 
     const newSpiral = createSpiral(x, y, w, h, mirrorOn);
     setEditing(newSpiral);
     e.preventDefault();
   });
 
-  /* ── Colorize SVG text ── */
+  // swap out the black in the svg with whatever color the user picked
   function colorizeSvg(color) {
-    // Replace all stroke:#000000 and fill:#000000 with the chosen color
     return svgTemplate
       .replace(/stroke:#000000/g, "stroke:" + color)
       .replace(/fill:#000000/g, "fill:" + color);
@@ -362,7 +363,7 @@
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgText);
   }
 
-  /* ── Create a spiral ── */
+  // creates a new spiral on the page
   function createSpiral(x, y, w, h, mirrored) {
     const container = document.createElement("div");
     container.className = "fib-spiral-container " + (darkMode ? "fib-dark" : "fib-light");
@@ -385,7 +386,7 @@
     }
     container.appendChild(img);
 
-    /* Delete button (red X, top-right) */
+    // delete btn - shows on hover
     const btnDelete = document.createElement("button");
     btnDelete.className = "fib-delete-btn";
     btnDelete.textContent = "✕";
@@ -398,21 +399,21 @@
     });
     container.appendChild(btnDelete);
 
-    /* Resize handle (bottom-right) */
+    // resize handle bottom right
     const resizeHandle = document.createElement("div");
     resizeHandle.className = "fib-resize-handle";
     container.appendChild(resizeHandle);
 
-    /* Rotate handle (top-center) */
+    // rotate handle at the top center
     const rotateHandleEl = document.createElement("div");
     rotateHandleEl.className = "fib-rotate-handle";
     container.appendChild(rotateHandleEl);
 
-    /* Edit menu (bottom-right, outside) */
+    // mini menu - lives outside the container so it doesnt rotate with it
     const menu = document.createElement("div");
     menu.className = "fib-edit-menu";
 
-    /* Single rotate button — 90° CW icon only */
+    // rotate 90 btn
     const btnRotate = document.createElement("button");
     btnRotate.textContent = "Rotate 90°";
     btnRotate.title = "Rotate 90° clockwise";
@@ -421,9 +422,10 @@
       const current = parseFloat(container.dataset.rotation || "0");
       container.dataset.rotation = current + 90;
       updateContainerTransform(container);
+      positionEditMenu(container);
     });
 
-    /* Mirror button — text only, no icon */
+    // mirror btn
     const btnMirrorSpiral = document.createElement("button");
     btnMirrorSpiral.textContent = "Mirror";
     btnMirrorSpiral.title = "Mirror this spiral";
@@ -434,10 +436,29 @@
       img.style.transform = mirrd ? "scaleX(-1)" : "";
     });
 
-    /* Color picker */
-    const colorLabel = document.createElement("label");
-    colorLabel.className = "fib-color-label";
-    colorLabel.title = "Change spiral color";
+    // duplicate btn - clones the spiral to the center of the screen
+    const btnDuplicate = document.createElement("button");
+    btnDuplicate.textContent = "Duplicate";
+    btnDuplicate.title = "Duplicate this spiral";
+    btnDuplicate.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const w = parseFloat(container.style.width);
+      const h = parseFloat(container.style.height);
+      const centerX = window.scrollX + (window.innerWidth / 2) - (w / 2);
+      const centerY = window.scrollY + (window.innerHeight / 2) - (h / 2);
+      const mirrored = container.dataset.mirrored === "1";
+      const dupe = createSpiral(centerX, centerY, w, h, mirrored);
+      // copy over rotation and color
+      const rot = parseFloat(container.dataset.rotation || "0");
+      const color = container.dataset.spiralColor || "#000000";
+      dupe.dataset.rotation = rot;
+      dupe.dataset.spiralColor = color;
+      dupe.querySelector(".fib-spiral-img").src = svgToDataUrl(colorizeSvg(color));
+      updateContainerTransform(dupe);
+      setEditing(dupe);
+    });
+
+    // color picker
     const colorInput = document.createElement("input");
     colorInput.type = "color";
     colorInput.value = currentColor;
@@ -453,12 +474,12 @@
 
     menu.appendChild(btnRotate);
     menu.appendChild(btnMirrorSpiral);
+    menu.appendChild(btnDuplicate);
     menu.appendChild(colorInput);
 
-    // Prevent clicks on the menu from closing edit mode
+    // stop menu clicks from bubbling up and closing edit mode
     menu.addEventListener("mousedown", (e) => e.stopPropagation());
 
-    // Menu lives outside the container so it doesn't rotate
     document.documentElement.appendChild(menu);
     container._editMenu = menu;
 
@@ -466,7 +487,8 @@
     return container;
   }
 
-  /* ── Position the edit menu at the visual bottom-right of a spiral ── */
+  // positions the mini menu at the bottom right of the spiral's bounding box
+  // even when rotated this stays in the right spot since the menu is outside the container
   function positionEditMenu(container) {
     const menu = container._editMenu;
     if (!menu) return;
@@ -475,11 +497,10 @@
     menu.style.top = (rect.bottom + window.scrollY + 15) + "px";
   }
 
-  /* ── Update container rotation transform ── */
+  // update rotation + counter-rotate the UI bits so they dont spin with it
   function updateContainerTransform(container) {
     const rot = parseFloat(container.dataset.rotation || "0");
     container.style.transform = rot ? `rotate(${rot}deg)` : "";
-    // Counter-rotate UI elements so they stay upright
     const counterRot = rot ? `rotate(${-rot}deg)` : "";
     const del = container.querySelector(".fib-delete-btn");
     const resize = container.querySelector(".fib-resize-handle");
@@ -487,7 +508,6 @@
     if (del) del.style.transform = counterRot;
     if (resize) resize.style.transform = counterRot;
     if (rotHandle) rotHandle.style.transform = `translateX(-50%) ${counterRot}`;
-    // Reposition the external edit menu
     if (editingSpiral === container) positionEditMenu(container);
   }
 })();

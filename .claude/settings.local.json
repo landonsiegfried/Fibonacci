@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(node -e \"console.log\\(''node ok''\\)\")",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "WebSearch"
     ]
   }
 }

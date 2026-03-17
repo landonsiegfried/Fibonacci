@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Fibonacci Overlay",
+  "name": "Fibonacci Finder",
   "version": "1.0.0",
-  "description": "Draw Fibonacci spirals anywhere on any webpage. Click and drag to create, mirror, and toggle dark/light mode.",
+  "description": "Find and create Fibonacci sequences anywhere. Click and drag to create, mirror, and toggle dark/light mode.",
   "permissions": ["activeTab", "scripting"],
   "action": {
     "default_icon": {
@@ -10,7 +10,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "Fibonacci Overlay (Alt+Q)"
+    "default_title": "Fibonacci Finder (Alt+Q)"
   },
   "commands": {
     "_execute_action": {
