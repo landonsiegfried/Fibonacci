@@ -50,6 +50,7 @@
     .then((r) => r.text())
     .then((text) => {
       svgTemplate = text;
+      previewImg.src = svgToDataUrl(colorizeSvg(darkMode ? "#ffffff" : "#000000"));
     });
 
   // slight tint so user knows the extension is active
@@ -98,6 +99,10 @@
   function applyTheme() {
     toolbar.className = darkMode ? "fib-dark visible" : "fib-light visible";
     themeLabel.textContent = darkMode ? "Light" : "Dark";
+    // update preview color so it matches the current theme
+    if (svgTemplate) {
+      previewImg.src = svgToDataUrl(colorizeSvg(darkMode ? "#ffffff" : "#000000"));
+    }
     document.querySelectorAll(".fib-spiral-container").forEach((el) => {
       el.classList.toggle("fib-dark", darkMode);
       el.classList.toggle("fib-light", !darkMode);
