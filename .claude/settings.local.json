@@ -3,7 +3,9 @@
     "allow": [
       "Bash(node -e \"console.log\\(''node ok''\\)\")",
       "Bash(node -e \":*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(zip -r \"c:/Users/lando/OneDrive/Desktop/fibonacci-finder.zip\" . -x \".git/*\" \".claude/*\")",
+      "Bash(rm -f \"c:/Users/lando/OneDrive/Desktop/fibonacci-finder.zip\")"
     ]
   }
 }
